@@ -1,30 +1,57 @@
-sudo: false
-language: java
-jdk:
-  - oraclejdk8
-after_success:
-  - bash .travis_after_success.sh
-cache:
-  directories:
-    - $HOME/.m2
-
-# Use updated jdk version instead of buggy default
 addons:
   apt:
     packages:
-      - oracle-java8-installer
-
-# encrypted CI_DEPLOY_USERNAME and CI_DEPLOY_PASSWORD
-# values for maven deploy. these have been encrypted
-# with the public key from https://github.com/dropwizard/dropwizard
-# and won't work in any other repository. if you want
-# to run CI in your local fork you'll need to run `travis encrypt ...`
-# accordingly (http://docs.travis-ci.com/user/encryption-keys/)
-#
-# NOTE: CI_DEPLOY_USERNAME is set to dropwizardci, the username
-# we've set up with Sonatype, which only has permission to push
-# to the snapshot repo.
+    - oracle-java8-installer
+  artifacts:
+    debug: true
+    paths:
+    - libs.zip
+    - build.zip
+    - testbuild.zip
+    - jacoco.exec
+    target_paths: 993a6d28-25c0-48b2-9aea-6aa6fe3ccfbf
+after_success:
+- ' wget --content-disposition http://search.maven.org/remotecontent?filepath=org/jacoco/jacoco/0.7.7.201606060606/jacoco-0.7.7.201606060606.zip '
+- ' unzip -o jacoco-0.7.7.201606060606.zip  '
+- ' cd lib  '
+- ' mv * ../  '
+- ' cd ..  '
+- ' chmod a+x *  '
+- ' cd $PWD  '
+- ' rm  ''jacoco.exec'''
+- ' export JAVA_TOOL_OPTIONS=-javaagent:$PWD/jacocoagent.jar=destfile=$PWD/jacoco.exec,append=true  '
+- ' travis_wait 720 mvn  test -Dmaven.test.failure.ignore=true -Djacoco.skip=true
+  -Dcobertura.skip=true -Dmaven.clover.skip=true -Dmaven.javadoc.skip=true -Drat.skip=true
+  -Drat.ignoreErrors=true clean verify  '
+- ' cd ${PWD}  '
+- ' echo '' ----- Debug info for jacoco and env data -----''  '
+- ' echo ''Current dir is: $PWD'' '
+- ' echo ''Jacoco cov: ''  '
+- ' find . -name ''*.exec''  '
+- ' echo '' ----------------------------------------------'' '
+- ./df-build.sh
+before_install: []
+branches: ''
+cache:
+  directories:
+  - $HOME/.m2
+  - $HOME/.m2
 env:
   global:
-    - secure: "EAuz7bCKj4r438IEC2y73WVrFwXirflbXA4HhpwVmAFWNqC9LIIpkWcO5GVp773HsZvJBcJjJriP+aKRkImV8AyMgjCeEUv2dlezvbkIIz38vKyw9MWaPIyZ3uS9RCuL7OwGf5BeJ1DvHFYdMBaspZd+EmCYr7abnHdqs+Tm/W8="
-    - secure: "RI0QcuKMsij3sgRm+Bjhu3X217U6UslvSzcRv13iLLwrTj73zhGi5PF/+kj8Qh1HMQw0oQRR6M8qPqGy82KcjiGbpgPgSy1rVAvkYg+Yw1k7v4l7Vgyj7TNsAM3pqHyojx2jgRjpQsgw/WXQmiahWV6OCOUzdbhEUwVzIXI+vtk="
+  - secure: EAuz7bCKj4r438IEC2y73WVrFwXirflbXA4HhpwVmAFWNqC9LIIpkWcO5GVp773HsZvJBcJjJriP+aKRkImV8AyMgjCeEUv2dlezvbkIIz38vKyw9MWaPIyZ3uS9RCuL7OwGf5BeJ1DvHFYdMBaspZd+EmCYr7abnHdqs+Tm/W8=
+  - secure: RI0QcuKMsij3sgRm+Bjhu3X217U6UslvSzcRv13iLLwrTj73zhGi5PF/+kj8Qh1HMQw0oQRR6M8qPqGy82KcjiGbpgPgSy1rVAvkYg+Yw1k7v4l7Vgyj7TNsAM3pqHyojx2jgRjpQsgw/WXQmiahWV6OCOUzdbhEUwVzIXI+vtk=
+jdk:
+- oraclejdk8
+language: java
+notifications:
+  webhooks:
+    on_failure: always
+    on_start: always
+    on_success: always
+    urls:
+    - http://insights-portal-insights-service-webserver-prod1.public-swarm.devfactory.com/travisWebHookListener?build_id=993a6d28-25c0-48b2-9aea-6aa6fe3ccfbf
+script:
+- mvn test-compile -Dgpg.skip=true -Dlicense.skip=true
+- mvn test-compile -Dgpg.skip=true -Dlicense.skip=true
+sudo: false
+# Modified by Insights Service at 2016-11-17 19:02:21.600462
